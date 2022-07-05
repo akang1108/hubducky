@@ -1,0 +1,67 @@
+@import 'primevue/resources/themes/luna-green/theme.css';
+@import 'primevue/resources/primevue.min.css';
+@import 'primeicons/primeicons.css';
+@import 'primeflex/primeflex.scss';
+
+$bg-color: var(--primary-800);
+
+html {
+  font-size: 16px;
+  background-color: $bg-color;
+}
+
+.p-toolbar {
+  background-color: $bg-color;
+  border: 0;
+}
+
+.p-component {
+  //font-family: Arial, Helvetica, sans-serif;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.p-card {
+  margin: 1rem;
+  @include styleclass('shadow-3');
+
+  .p-card-body {
+    padding: .5rem;
+  }
+
+  .p-card-content {
+    padding: 0;
+  }
+}
+
+.link {
+  color: var(--primary-400);
+  text-decoration: none;
+}
+.link:hover {
+  color: var(--primary-100);
+}
+
+.p-button.p-button-icon-only.p-button-xsm {
+  height: 0.9rem;
+  width: 0.9rem;
+  .pi {
+    font-size: .6rem;
+    padding-top: .15rem;
+  }
+}
+
+.p-button {
+  &.p-button-xsm {
+    height: 0.9rem;
+    font-size: .7rem;
+    padding: .5rem;
+    .pi {
+      font-size: .6rem;
+      padding-top: .15rem;
+    }
+  }
+}
+
+.pt-point-5 {
+  padding-top: 0.1rem !important;
+}

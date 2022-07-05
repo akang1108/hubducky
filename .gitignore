@@ -1,0 +1,26 @@
+# Personal import file
+links.json
+
+# Mac
+.DS_Store
+
+# dependencies and artifacts
+dist
+node_modules
+utils/chrome-bookmarks.json
+
+# configs
+.env.local
+.env.*.local
+
+# logs
+*.log*
+
+# Editors
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
