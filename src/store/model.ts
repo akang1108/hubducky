@@ -10,11 +10,11 @@ export class Link {
 export class Section {
   name: string;
   links: Link[];
-  description?: string;
-  constructor(name: string, links: Link[], description?: string) {
+  notes?: string;
+  constructor(name: string, links: Link[], notes?: string) {
     this.name = name;
     this.links = links;
-    this.description = description;
+    this.notes = notes;
   }
 }
 

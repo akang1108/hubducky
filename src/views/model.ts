@@ -29,7 +29,7 @@ export class EditLinkModal extends EditModal {
 
 export class EditSectionModal extends EditModal {
   name: string;
-  desc?: string;
+  notes?: string;
 
   constructor() {
     super();
@@ -37,15 +37,24 @@ export class EditSectionModal extends EditModal {
   }
 }
 
+export class EditTabModal extends EditModal {
+  name: string;
+  showDelete: boolean;
 
+  constructor() {
+    super();
+    this.name = '';
+    this.showDelete = false;
+  }
+}
 
+export class ImportFromTextModal {
+  visible: boolean;
+  jsonText: string;
 
-// visible: false;
-// title: '';
-// openModalLinkTitle: '';
-// confirmButtonName: '';
-// linkName: '';
-// linkUrl: '';
-// tabIndex: 0;
-// sectionIndex: 0;
-// linkIndex: null;
+  constructor() {
+    this.visible = false;
+    this.jsonText = '';
+  }
+}
+

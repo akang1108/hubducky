@@ -52,6 +52,7 @@ Some things I plan to add:
 * Public website sharing this project for download and demo features
 * Keyboard shortcuts
 * See if the distribution can just be a single html file (with all js/css/images embedded)
+  * https://jamesscheller.com/vue-cli-and-single-file-webpack-bundles
 
 ## Notes
 

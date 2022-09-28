@@ -1,13 +1,14 @@
 <template>
+  <Keyboard :enabled="keyboardMainEnabled" :input="keyboardInput"></Keyboard>
   <div class="home">
     <TabView :activeIndex="activeIndex" @tab-click="tabClick($event)">
       <TabPanel v-for="(tab, tabIndex) in linksData.tabs" :key="tabIndex" :header="tab.name">
 
-        <Button v-if="editMode"
-                icon="pi pi-times"
-                :label="`Delete tab - ${tab.name}`"
-                class="p-button-danger p-button-sm mb-1"
-                @click="confirmDeleteTab(tabIndex)"/>
+<!--        <Button v-if="editMode"-->
+<!--                icon="pi pi-times"-->
+<!--                :label="`Delete tab - ${tab.name}`"-->
+<!--                class="p-button-danger p-button-sm mb-1"-->
+<!--                @click="confirmDeleteTab(tabIndex)"/>-->
 
         <div class="flex flex-wrap" :id="'tab-' + tabIndex">
 
@@ -18,46 +19,53 @@
                 :draggable="editMode">
 
             <template #title>
-              <Button v-if="editMode"
-                      icon="pi pi-times"
-                      class="p-button-danger p-button-xsm mb-1"
-                      @click="confirmDeleteSection(tabIndex, sectionIndex)"/>
-              {{ section.name }}
-            </template>
-
-            <template #content v-if="section.description">
-              <TextArea v-model="section.description" :autoResize="true"></TextArea>
+              <div v-if="editMode" class="flex">
+                <Button v-if="editMode"
+                        icon="pi pi-times"
+                        class="p-button-danger p-button-xsm mt-1"
+                        @click="confirmDeleteSection(tabIndex, sectionIndex)"/>
+                <div tabindex="0" class="link ml-1"
+                     @keyup.enter="openEditSection(tabIndex, sectionIndex)"
+                     @click="openEditSection(tabIndex, sectionIndex)">
+                  {{ section.name }}
+                </div>
+              </div>
+              <div v-if="!editMode">
+                {{ section.name }}
+              </div>
             </template>
 
             <template #content>
-              <div v-for="(link, linkIndex) in section.links" :key="linkIndex" class="line-height-3">
+              <div v-if="section.notes">
+                <TextArea :ref="`tab-${tabIndex}-section-${sectionIndex}-notes`" v-model="section.notes" :auto-resize="true"></TextArea>
+              </div>
 
+              <div v-for="(link, linkIndex) in section.links" :key="linkIndex" class="line-height-3">
                 <div v-if="link.url"
                      class="flex"
                      :id="`link-${linkIndex}`"
                      :ref="`tab-${tabIndex}-section-${sectionIndex}-link-${linkIndex}`"
                      :draggable="editMode">
 
-                  <div v-if="editMode">
+                  <div v-if="editMode" class="flex">
                     <Button icon="pi pi-times"
                             class="p-button-danger p-button-xsm mb-1 mr-1"
                             @click="confirmDeleteLink(tabIndex, sectionIndex, linkIndex)"/>
+                    <div tabindex="0" class="link"
+                         @keyup.enter="openEditLink(tabIndex, sectionIndex, linkIndex)"
+                         @click="openEditLink(tabIndex, sectionIndex, linkIndex)">
+                      {{ link.name }}
+                    </div>
                   </div>
 
                   <a v-if="!editMode" :href="link.url" class="link">{{ link.name }}</a>
-                  <div tabindex="0" v-if="editMode" class="link"
-                       @keyup.enter="openEditLink(tabIndex, sectionIndex, linkIndex)"
-                       @click="openEditLink(tabIndex, sectionIndex, linkIndex)">
-                    {{ link.name }}
-                  </div>
+
                 </div>
               </div>
 
-              <Button v-if="editMode" label="link" icon="pi pi-plus" class="mb-1 mr-1 p-button-primary p-button-xsm"
+              <Button v-if="editMode" label="link" icon="pi pi-plus" class="mt-2 mb-1 mr-1 p-button-primary p-button-xsm"
                       @click="openEditLink(tabIndex, sectionIndex, null)" />
-
             </template>
-
           </Card>
 
           <Card v-if="editMode">
@@ -72,13 +80,14 @@
 
     <Toolbar>
       <template #start>
-        <Button v-if="!editMode" label="Edit Mode" icon="pi pi-pencil" class="p-button-sm mr-1" @click="toggleEditMode()" />
-        <Button v-if="editMode" label="View Mode" icon="pi pi-eye" class="p-button-sm mr-1" @click="toggleEditMode()" />
-        <Button label="Json" icon="pi pi-eye" class="p-button-sm" @click="this.jsonVisible = true" />
+        <Button v-if="!editMode" label="[e]dit" icon="pi pi-pencil" class="p-button-sm mr-1" @click="toggleEditMode()" />
+        <Button v-if="editMode" label="[v]iew" icon="pi pi-eye" class="p-button-sm mr-1" @click="toggleEditMode()" />
+        <Button label="[j]son" icon="pi pi-eye" class="p-button-sm" @click="this.jsonVisible = true" />
       </template>
 
       <template #end>
-        <Button label="Import" @click="importModal.visible = true" icon="pi pi-upload" class="p-button-sm p-button-warning mr-1" />
+        <Button label="[i]mport" @click="importModal.visible = true" icon="pi pi-upload" class="p-button-sm p-button-warning mr-1" />
+        <Button label="[i]mport" @click="importFromTextModal.visible = true" icon="pi pi-pencil" class="p-button-sm p-button-warning mr-1" />
         <Button label="Delete storage" @click="confirmDeleteLocalStorage()" icon="pi pi-times" class="p-button-sm p-button-danger" />
       </template>
     </Toolbar>
@@ -86,6 +95,9 @@
     <ConfirmDialog></ConfirmDialog>
 
     <Dialog v-model:visible="jsonVisible" :dismissableMask="true" :modal="true">
+      <template #header>
+        <Button label="copy to clipboard" @click="copyToClipboard(JSON.stringify(linksData, null, 2))"/>
+      </template>
       <TextArea :modelValue="JSON.stringify(linksData, null, 2)" :autoResize="true" style="width: 50rem; font-size: .7rem;"></TextArea>
     </Dialog>
 
@@ -108,17 +120,45 @@
         <label for="editSectionName" class="col-3 mt-1 justify-content-end">Name</label>
         <InputText id="editSectionName" class="col-7" type="text" v-model="editSectionModal.name" autofocus @keyup.enter="saveSection()"/>
       </div>
-      <div class="field grid">
-        <label for="editSectionDesc" class="col-3 mt-1 justify-content-end">Description</label>
-        <InputText id="editSectionDesc" class="col-9" type="text" v-model="editSectionModal.desc" @keyup.enter="saveSection()"/>
+      <div class="field grid justify-content-center">
+        <label for="editSectionNotes" class="col-9 mt-1">Notes</label>
+        <TextArea id="editSectionNotes" class="col-9" style="height: 10rem;" v-model="editSectionModal.notes" />
       </div>
       <div class="grid justify-content-center">
         <Button :label="editSectionModal.confirmButtonName" @click="saveSection()"/>
       </div>
     </Dialog>
 
+    <Dialog v-model:header="editTabModal.title" v-model:visible="editTabModal.visible" :dismissableMask="true" :modal="true">
+      <div class="field grid">
+        <label for="editTabName" class="col-3 mt-1 justify-content-end">Name</label>
+        <InputText id="editTabName" class="col-7" type="text" v-model="editTabModal.name" autofocus @keyup.enter="saveTab()"/>
+      </div>
+      <div class="grid justify-content-center">
+        <Button :label="editTabModal.confirmButtonName" @click="saveTab()"/>
+      </div>
+    </Dialog>
+
     <Dialog v-model:header="importModal.title" v-model:visible="importModal.visible" :dismissableMask="true" :modal="true">
       <FileUpload id="importUploadFile" name="importUploadFile" mode="basic" :customUpload="true" @uploader="uploadFile" />
+
+      <div class="field grid justify-content-center">
+        <label for="jsonText" class="col-9 mt-1">JSON</label>
+        <TextArea id="jsonText" class="col-9" style="height: 30rem;" v-model="importFromTextModal.jsonText" />
+      </div>
+      <div class="grid justify-content-center">
+        <Button label="Import" @click="updateLinksFromText(importFromTextModal.jsonText);importFromTextModal.visible = false;"/>
+      </div>
+    </Dialog>
+
+    <Dialog class="w-8" header="Import from json" v-model:visible="importFromTextModal.visible" :dismissableMask="true" :modal="true">
+      <div class="field grid justify-content-center">
+        <label for="jsonText" class="col-9 mt-1">JSON</label>
+        <TextArea id="jsonText" class="col-9" style="height: 30rem;" v-model="importFromTextModal.jsonText" />
+      </div>
+      <div class="grid justify-content-center">
+        <Button label="Import" @click="updateLinksFromText(importFromTextModal.jsonText);importFromTextModal.visible = false;"/>
+      </div>
     </Dialog>
   </div>
 </template>
@@ -141,25 +181,32 @@ import Toolbar from "primevue/toolbar";
 import InputText from "primevue/inputtext";
 import ConfirmDialog from "primevue/confirmdialog";
 import FileUpload, {FileUploadUploadEvent} from "primevue/fileupload";
-import {Link, LinksData, Section} from "@/store/model";
+import {Link, LinksData, Section, Tab} from "@/store/model";
 import { watch } from "vue";
-import {EditLinkModal, EditSectionModal} from "@/views/model";
+import {EditLinkModal, EditSectionModal, EditTabModal, ImportFromTextModal} from "@/views/model";
+import Keyboard from "@/components/Keyboard.vue";
+import {KeyboardInput} from "@/components/keyboard-model";
+import { Ref } from 'vue-property-decorator';
 
 @Options({
   components: {
     Button, Dialog, TabView, TabPanel, Card, Panel, Fieldset, DataTable, Column, TextArea, Toolbar,
-    ConfirmDialog, InputText, FileUpload,
+    ConfirmDialog, InputText, FileUpload, Keyboard,
   },
 })
 export default class HomeView extends Vue {
   editLinkModal = new EditLinkModal();
   editSectionModal = new EditSectionModal();
+  editTabModal = new EditTabModal();
+  importFromTextModal = new ImportFromTextModal();
+  @Ref() keyboardInput = new KeyboardInput();
 
   importModal = {
     visible: false,
     title: 'Import from file',
     filename: '',
   } as any;
+
   isDragging = false;
   jsonVisible = false;
 
@@ -173,6 +220,17 @@ export default class HomeView extends Vue {
 
   set activeIndex(activeIndex: number) {
     store.commit('setTabIndex', activeIndex);
+
+    const self = this;
+
+    self.$nextTick(() => {
+      self.linksData.tabs[activeIndex].sections.forEach((section, sectionIndex) => {
+        const elemArr = self.$refs[self.getRefId(activeIndex, sectionIndex, null) + "-notes"] as any[];
+        if (elemArr) {
+          elemArr[0].resize();
+        }
+      });
+    });
   }
 
   get editMode() {
@@ -182,6 +240,16 @@ export default class HomeView extends Vue {
   set editMode(editMode: boolean) {
     store.commit('setEditMode', editMode);
     this.toggleEventListeners(editMode);
+  }
+
+  get keyboardMainEnabled(): boolean {
+    const keyboardMainEabled = !this.editTabModal.visible && !this.importModal.visible &&
+        !this.editSectionModal.visible && !this.editSectionModal.visible && !this.editLinkModal.visible;
+
+    console.log('editTabModal', this.editTabModal)
+    console.log('keyboardMainEnabled', keyboardMainEabled);
+
+    return keyboardMainEabled;
   }
 
   dragEventListeners = new Map<string, any[]>();
@@ -218,8 +286,8 @@ export default class HomeView extends Vue {
   }
 
   created() {
-    watch(this.editLinkModal, (newEditModal: any) => {
-      if (newEditModal.visible) {
+    watch([this.editLinkModal, this.editSectionModal, this.editTabModal], (newValues: any[]) => {
+      if (newValues[0].visible || newValues[1].visible || newValues[2].visible) {
         this.removeKeysListener();
       } else {
         this.addKeysListener();
@@ -233,11 +301,13 @@ export default class HomeView extends Vue {
 
   uploadFile(e: FileUploadUploadEvent) {
     const file = (e.files as File[])[0];
-    file.text().then((text: string) => {
-      const linksData = JSON.parse(text) as LinksData;
-      store.commit('setLinksData', linksData);
-      this.importModal.visible = false;
-    });
+    file.text().then(this.updateLinksFromText);
+  }
+
+  updateLinksFromText(jsonText: string) {
+    const linksData = JSON.parse(jsonText) as LinksData;
+    store.commit('setLinksData', linksData);
+    this.importModal.visible = false;
   }
 
   addKeysListener() {
@@ -251,7 +321,11 @@ export default class HomeView extends Vue {
   keysListener(e: KeyboardEvent) {
     switch (e.key) {
       case 'e': {
-        this.toggleEditMode(e);
+        this.editMode = true;
+        break;
+      }
+      case 'v': {
+        this.editMode = false;
         break;
       }
       case 'j': {
@@ -276,11 +350,15 @@ export default class HomeView extends Vue {
   }
 
   tabClick(event: any) {
-    store.commit('setTabIndex', event.index);
+    if (this.editMode && event.index === this.activeIndex) {
+      this.openEditTab(this.activeIndex);
+    } else if (event.index !== this.activeIndex) {
+      this.activeIndex = event.index;
+    }
   }
 
 
-  toggleEditMode(event: any) {
+  toggleEditMode() {
     this.editMode = !this.editMode;
   }
 
@@ -487,12 +565,29 @@ export default class HomeView extends Vue {
       const tab = this.linksData.tabs[tabIndex];
       const section = tab.sections[sectionIndex] as Section;
       this.editSectionModal.name = section.name;
-      this.editSectionModal.desc = section.description;
+      this.editSectionModal.notes = section.notes;
       this.editSectionModal.confirmButtonName = 'Update';
     } else {
       this.editSectionModal.name = '';
-      this.editSectionModal.desc = '';
-      this.editLinkModal.confirmButtonName = 'Add';
+      this.editSectionModal.notes = '';
+      this.editSectionModal.confirmButtonName = 'Add';
+    }
+  }
+
+  openEditTab(tabIndex: number | null) {
+    this.editTabModal.tabIndex = tabIndex;
+    this.editTabModal.visible = true;
+    this.editTabModal.title = tabIndex === null ? "Add Tab" : "Edit Tab"
+
+    if (tabIndex !== null) {
+      const tab = this.linksData.tabs[tabIndex];
+      this.editTabModal.name = tab.name;
+      this.editTabModal.confirmButtonName = 'Update';
+      this.editTabModal.showDelete = true;
+    } else {
+      this.editTabModal.name = '';
+      this.editTabModal.confirmButtonName = 'Add';
+      this.editTabModal.showDelete = false;
     }
   }
 
@@ -521,21 +616,35 @@ export default class HomeView extends Vue {
 
     if (m.sectionIndex !== null) {
       const sectionLinks = tab.sections[m.sectionIndex].links;
-      tab.sections[m.sectionIndex] = new Section(m.name, sectionLinks, m.desc);
+      tab.sections[m.sectionIndex] = new Section(m.name, sectionLinks, m.notes);
     } else {
-      tab.sections.push(new Section(m.name, [], m.desc));
+      tab.sections.push(new Section(m.name, [], m.notes));
     }
 
     store.commit('setLinksData', linksCopy);
-    this.editLinkModal.visible = false;
+    this.editSectionModal.visible = false;
   }
 
+  saveTab() {
+    const linksCopy = JSON.parse(JSON.stringify(this.linksData)) as LinksData;
+    const m = this.editTabModal;
+
+    if (m.tabIndex !== null) {
+      linksCopy.tabs[m.tabIndex].name = m.name;
+    } else {
+      linksCopy.tabs.push(new Tab(m.name, []));
+    }
+
+    store.commit('setLinksData', linksCopy);
+    this.editTabModal.visible = false;
+  }
+
+  copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text);
+  }
 }
 
 </script>
 
 <style>
-.form-label {
-  width: 10rem;
-}
 </style>
