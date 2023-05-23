@@ -1,8 +1,8 @@
-import {LinksData} from "@/store/model";
+import {Data} from "@/store/model";
 
 export class InitialDataService {
-  retrieve(): Promise<LinksData> {
-    return fetch('links.json').then(response => response.json() as Promise<LinksData>);
+  retrieve(): Promise<Data> {
+    return fetch('links.json').then(response => response.json() as Promise<Data>);
   }
 }
 

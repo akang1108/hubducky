@@ -16,6 +16,7 @@ Not intending for this to run on a web server.
 * Typescript
 * Vuex
 * PrimeVue, PrimeIcons, PrimeFlex
+* Dropbox (needed node-polyfill-webpack-plugin)
 
 ## Requirements
 

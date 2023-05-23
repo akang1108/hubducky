@@ -1,37 +1,41 @@
 import { createStore } from 'vuex'
-import {LinksData, Tab} from "@/store/model";
+import {Ducky, Data, Tab} from "@/store/model";
 import {initialDataService} from "@/services/initial-data-service";
 import _ from "lodash";
 
 export interface State {
-  linksData: LinksData,
+  ducky: Ducky,
   tabIndex: number,
   editMode: boolean,
 }
 
 const keys = {
-  LINKS_DATA: 'links-data',
+  DUCKY: 'ducky',
   TAB_INDEX: 'tab-index',
   EDIT_MODE: 'false',
 };
 
 export default createStore<State>({
   state: {
-    linksData: new LinksData([]),
+    ducky: Ducky.blank(),
     tabIndex: 0,
     editMode: false,
   },
   getters: {
   },
   mutations: {
+    setDucky(state, ducky: Ducky) {
+      state.ducky = ducky;
+      localStorage.setItem(keys.DUCKY, JSON.stringify(ducky));
+    },
+    setData(state, data: Data) {
+      state.ducky.data = data;
+      state.ducky.lastUpdated = new Date();
+      localStorage.setItem(keys.DUCKY, JSON.stringify(state.ducky));
+    },
     setTabIndex(state, tabIndex: number) {
       state.tabIndex = tabIndex;
       localStorage.setItem(keys.TAB_INDEX, tabIndex.toString());
-    },
-    setLinksData(state, linksData: LinksData) {
-      state.linksData = linksData;
-      // _.set(state.linksData, 'tabs', linksData.tabs);
-      localStorage.setItem(keys.LINKS_DATA, JSON.stringify(linksData));
     },
     setEditMode(state, editMode: boolean) {
       state.editMode = editMode;
@@ -46,19 +50,14 @@ export default createStore<State>({
       const editMode = localStorage.getItem(keys.EDIT_MODE);
       context.commit('setEditMode', editMode === 'true');
 
-      const linksDataFromLocalStorage = localStorage.getItem(keys.LINKS_DATA);
-      if (linksDataFromLocalStorage) {
-        context.commit('setLinksData', JSON.parse(linksDataFromLocalStorage));
+      const ducky = localStorage.getItem(keys.DUCKY);
+      if (ducky) {
+        context.commit('setDucky', JSON.parse(ducky));
       } else {
-        context.commit('setLinksData', new LinksData([]));
+        context.commit('setDucky', Ducky.blank());
       }
     },
-    resetLinks(context) {
-      initialDataService.retrieve().then(linksData => {
-        context.commit('setLinksData', linksData);
-      });
-    },
-    clearStorage(context) {
+    deleteStorage(context) {
       localStorage.clear();
       context.dispatch('init');
     },

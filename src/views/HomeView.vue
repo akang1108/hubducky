@@ -1,8 +1,12 @@
 <template>
-  <Keyboard :enabled="keyboardMainEnabled" :input="keyboardInput"></Keyboard>
+<!--  <Keyboard :enabled="keyboardMainEnabled" :input="keyboardInput"></Keyboard>-->
+  <div>
+    <a :href="dropboxOAuth2URL" class="link">Link to Dropbox</a> |
+    <router-link to="/auth">Link to Auth</router-link>
+  </div>
   <div class="home">
     <TabView :activeIndex="activeIndex" @tab-click="tabClick($event)">
-      <TabPanel v-for="(tab, tabIndex) in linksData.tabs" :key="tabIndex" :header="tab.name">
+      <TabPanel v-for="(tab, tabIndex) in ducky.data.tabs" :key="tabIndex" :header="tab.name">
 
 <!--        <Button v-if="editMode"-->
 <!--                icon="pi pi-times"-->
@@ -86,7 +90,7 @@
       </template>
 
       <template #end>
-        <Button label="[i]mport" @click="importModal.visible = true" icon="pi pi-upload" class="p-button-sm p-button-warning mr-1" />
+<!--        <Button label="[i]mport" @click="importModal.visible = true" icon="pi pi-upload" class="p-button-sm p-button-warning mr-1" />-->
         <Button label="[i]mport" @click="importFromTextModal.visible = true" icon="pi pi-pencil" class="p-button-sm p-button-warning mr-1" />
         <Button label="Delete storage" @click="confirmDeleteLocalStorage()" icon="pi pi-times" class="p-button-sm p-button-danger" />
       </template>
@@ -96,9 +100,9 @@
 
     <Dialog v-model:visible="jsonVisible" :dismissableMask="true" :modal="true">
       <template #header>
-        <Button label="copy to clipboard" @click="copyToClipboard(JSON.stringify(linksData, null, 2))"/>
+        <Button label="copy to clipboard" @click="copyToClipboard(JSON.stringify(ducky, null, 2))"/>
       </template>
-      <TextArea :modelValue="JSON.stringify(linksData, null, 2)" :autoResize="true" style="width: 50rem; font-size: .7rem;"></TextArea>
+      <TextArea :modelValue="JSON.stringify(ducky, null, 2)" :autoResize="true" style="width: 50rem; font-size: .7rem;"></TextArea>
     </Dialog>
 
     <Dialog class="w-8" v-model:header="editLinkModal.title" v-model:visible="editLinkModal.visible" :dismissableMask="true" :modal="true">
@@ -147,7 +151,7 @@
         <TextArea id="jsonText" class="col-9" style="height: 30rem;" v-model="importFromTextModal.jsonText" />
       </div>
       <div class="grid justify-content-center">
-        <Button label="Import" @click="updateLinksFromText(importFromTextModal.jsonText);importFromTextModal.visible = false;"/>
+        <Button label="Import" @click="updateFromText(importFromTextModal.jsonText);importFromTextModal.visible = false;"/>
       </div>
     </Dialog>
 
@@ -157,7 +161,7 @@
         <TextArea id="jsonText" class="col-9" style="height: 30rem;" v-model="importFromTextModal.jsonText" />
       </div>
       <div class="grid justify-content-center">
-        <Button label="Import" @click="updateLinksFromText(importFromTextModal.jsonText);importFromTextModal.visible = false;"/>
+        <Button label="Import" @click="updateFromText(importFromTextModal.jsonText);importFromTextModal.visible = false;"/>
       </div>
     </Dialog>
   </div>
@@ -165,7 +169,7 @@
 
 <script lang="ts">
 
-import { Options, Vue } from 'vue-class-component';
+import {Options, Vue} from 'vue-class-component';
 import store from "@/store";
 import Dialog from "primevue/dialog";
 import Button from "primevue/button";
@@ -181,12 +185,14 @@ import Toolbar from "primevue/toolbar";
 import InputText from "primevue/inputtext";
 import ConfirmDialog from "primevue/confirmdialog";
 import FileUpload, {FileUploadUploadEvent} from "primevue/fileupload";
-import {Link, LinksData, Section, Tab} from "@/store/model";
-import { watch } from "vue";
+import {Data, Ducky, Link, Section, Tab} from "@/store/model";
+import {watch} from "vue";
 import {EditLinkModal, EditSectionModal, EditTabModal, ImportFromTextModal} from "@/views/model";
 import Keyboard from "@/components/Keyboard.vue";
 import {KeyboardInput} from "@/components/keyboard-model";
-import { Ref } from 'vue-property-decorator';
+import {Ref} from 'vue-property-decorator';
+
+require('isomorphic-fetch'); // or another library of choice.
 
 @Options({
   components: {
@@ -201,6 +207,12 @@ export default class HomeView extends Vue {
   importFromTextModal = new ImportFromTextModal();
   @Ref() keyboardInput = new KeyboardInput();
 
+  redirectUri = 'http://localhost:8080/auth'
+  dropboxOAuth2URL = `https://www.dropbox.com/oauth2/authorize` +
+      `?client_id=${process.env.DROPBOX_CLIENT_ID}` +
+      `&redirect_uri=${this.redirectUri}` +
+      `&response_type=token`;
+
   importModal = {
     visible: false,
     title: 'Import from file',
@@ -210,8 +222,8 @@ export default class HomeView extends Vue {
   isDragging = false;
   jsonVisible = false;
 
-  get linksData() {
-    return store.state.linksData;
+  get ducky() {
+    return store.state.ducky;
   }
 
   get activeIndex() {
@@ -224,7 +236,7 @@ export default class HomeView extends Vue {
     const self = this;
 
     self.$nextTick(() => {
-      self.linksData.tabs[activeIndex].sections.forEach((section, sectionIndex) => {
+      self.ducky.data.tabs[activeIndex].sections.forEach((section, sectionIndex) => {
         const elemArr = self.$refs[self.getRefId(activeIndex, sectionIndex, null) + "-notes"] as any[];
         if (elemArr) {
           elemArr[0].resize();
@@ -246,8 +258,8 @@ export default class HomeView extends Vue {
     const keyboardMainEabled = !this.editTabModal.visible && !this.importModal.visible &&
         !this.editSectionModal.visible && !this.editSectionModal.visible && !this.editLinkModal.visible;
 
-    console.log('editTabModal', this.editTabModal)
-    console.log('keyboardMainEnabled', keyboardMainEabled);
+    // console.log('editTabModal', this.editTabModal)
+    // console.log('keyboardMainEnabled', keyboardMainEabled);
 
     return keyboardMainEabled;
   }
@@ -256,7 +268,7 @@ export default class HomeView extends Vue {
 
   toggleEventListeners(editMode: boolean) {
     const self = this;
-    this.linksData.tabs.forEach((tab, tabIndex) => {
+    this.ducky.data.tabs.forEach((tab, tabIndex) => {
       tab.sections.forEach((section, sectionIndex) => {
         if (!section.links) {
           return;
@@ -286,6 +298,7 @@ export default class HomeView extends Vue {
   }
 
   created() {
+    console.log(process.env);
     watch([this.editLinkModal, this.editSectionModal, this.editTabModal], (newValues: any[]) => {
       if (newValues[0].visible || newValues[1].visible || newValues[2].visible) {
         this.removeKeysListener();
@@ -301,12 +314,12 @@ export default class HomeView extends Vue {
 
   uploadFile(e: FileUploadUploadEvent) {
     const file = (e.files as File[])[0];
-    file.text().then(this.updateLinksFromText);
+    file.text().then(this.updateFromText);
   }
 
-  updateLinksFromText(jsonText: string) {
-    const linksData = JSON.parse(jsonText) as LinksData;
-    store.commit('setLinksData', linksData);
+  updateFromText(jsonText: string) {
+    const ducky = JSON.parse(jsonText) as Ducky;
+    store.commit('setDucky', ducky);
     this.importModal.visible = false;
   }
 
@@ -380,7 +393,7 @@ export default class HomeView extends Vue {
     let debug = `tab: ${tabIndex} section: ${sectionIndex} link: ${linkIndex} x: ${event.clientX} y: ${event.clientY}`
 
     if (linkIndex != null) {
-      const link = (this.linksData.tabs[tabIndex as number].sections[sectionIndex as number] as Section).links[linkIndex];
+      const link = (this.ducky.data.tabs[tabIndex as number].sections[sectionIndex as number] as Section).links[linkIndex];
       debug = `dragging link '${link.name}' --- ${debug}`
     } else if (sectionIndex != null) {
       debug = `dragging a section --- ${debug}`
@@ -397,7 +410,7 @@ export default class HomeView extends Vue {
     let debug = '';
 
     if (linkIndex != null) {
-      const link = (this.linksData.tabs[tabIndex as number].sections[sectionIndex as number] as Section).links[linkIndex];
+      const link = (this.ducky.data.tabs[tabIndex as number].sections[sectionIndex as number] as Section).links[linkIndex];
 
       const targetElement = document.elementFromPoint(event.clientX, event.clientY);
 
@@ -412,15 +425,16 @@ export default class HomeView extends Vue {
           sectionIndex === targetSectionIndex &&
           linkIndex !== targetLinkIndex) {
 
-        const linksCopy = JSON.parse(JSON.stringify(this.linksData)) as LinksData;
-        const section = linksCopy.tabs[tabIndex].sections[sectionIndex] as Section;
+        const duckyCopy = this.getDuckyCopyWithDateUpdated();
+        const section = duckyCopy.data.tabs[tabIndex].sections[sectionIndex] as Section;
 
         debug = `putting link '${section.links[linkIndex].name}' before link '${section.links[targetLinkIndex].name}'\n${debug}`;
 
         const linkToMove = section.links.splice(linkIndex, 1);
         const insertIndex = targetLinkIndex > linkIndex ? targetLinkIndex - 1 : targetLinkIndex;
         section.links.splice(insertIndex, 0, linkToMove[0]);
-        store.commit('setLinksData', linksCopy);
+
+        store.commit('setDucky', duckyCopy);
       }
     } else if (sectionIndex != null) {
       debug = `dragend section --- ${debug}`
@@ -430,6 +444,12 @@ export default class HomeView extends Vue {
 
     event.stopPropagation();
     console.log(debug);
+  }
+
+  getDuckyCopyWithDateUpdated(): Ducky {
+    const duckyCopy = JSON.parse(JSON.stringify(this.ducky)) as Ducky;
+    duckyCopy.lastUpdated = new Date();
+    return duckyCopy;
   }
 
   upTheTreeGetId(element: Element | null, idStartsWith: string): number | null {
@@ -470,7 +490,7 @@ export default class HomeView extends Vue {
   }
 
   delete(tabIndex: number, sectionIndex: number | null, linkIndex: number | null) {
-    const linksCopy = JSON.parse(JSON.stringify(this.linksData)) as LinksData;
+    const linksCopy = JSON.parse(JSON.stringify(this.data)) as Data;
     const tab = linksCopy.tabs[tabIndex];
 
     if (sectionIndex === null) {
@@ -482,16 +502,16 @@ export default class HomeView extends Vue {
       section.links.splice(linkIndex, 1);
     }
 
-    store.commit('setLinksData', linksCopy);
+    store.commit('setLinks', linksCopy);
   }
 
   confirmDeleteLocalStorage() {
-    this.confirm(this.deleteLocalStorage, 'Delete', 'Delete local storage?');
+    this.confirm(this.deleteStorage, 'Delete', 'Delete local storage?');
   }
 
   confirmDeleteLink(tabIndex: number, sectionIndex: number, linkIndex: number) {
     const self = this;
-    const link = this.linksData.tabs[tabIndex].sections[sectionIndex].links[linkIndex];
+    const link = this.ducky.data.tabs[tabIndex].sections[sectionIndex].links[linkIndex];
     this.confirm(function () {
       self.delete(tabIndex, sectionIndex, linkIndex);
     }, 'Delete', `Delete link - ${link.name}?`);
@@ -499,7 +519,7 @@ export default class HomeView extends Vue {
 
   confirmDeleteSection(tabIndex: number, sectionIndex: number) {
     const self = this;
-    const section = this.linksData.tabs[tabIndex].sections[sectionIndex];
+    const section = this.ducky.data.tabs[tabIndex].sections[sectionIndex];
     this.confirm(function () {
       self.delete(tabIndex, sectionIndex, null);
     }, 'Delete', `Delete section - ${section.name}?`);
@@ -507,7 +527,7 @@ export default class HomeView extends Vue {
 
   confirmDeleteTab(tabIndex: number) {
     const self = this;
-    const tab = this.linksData.tabs[tabIndex];
+    const tab = this.ducky.data.tabs[tabIndex];
     this.confirm(function () {
       self.delete(tabIndex, null, null);
       self.activeIndex = 0;
@@ -530,8 +550,8 @@ export default class HomeView extends Vue {
     });
   }
 
-  deleteLocalStorage() {
-    store.dispatch('clearStorage');
+  deleteStorage() {
+    store.dispatch('deleteStorage');
   }
 
   openEditLink(tabIndex: number, sectionIndex: number, linkIndex: number | null) {
@@ -542,7 +562,7 @@ export default class HomeView extends Vue {
     this.editLinkModal.title = linkIndex === null ? "Add Link" : "Edit Link"
 
     if (linkIndex !== null) {
-      const tab = this.linksData.tabs[tabIndex];
+      const tab = this.ducky.data.tabs[tabIndex];
       const section = tab.sections[sectionIndex] as Section;
       const link = section.links[linkIndex] as Link;
       this.editLinkModal.name = link.name;
@@ -562,7 +582,7 @@ export default class HomeView extends Vue {
     this.editSectionModal.title = sectionIndex === null ? "Add Section" : "Edit Section"
 
     if (sectionIndex !== null) {
-      const tab = this.linksData.tabs[tabIndex];
+      const tab = this.ducky.data.tabs[tabIndex];
       const section = tab.sections[sectionIndex] as Section;
       this.editSectionModal.name = section.name;
       this.editSectionModal.notes = section.notes;
@@ -580,7 +600,7 @@ export default class HomeView extends Vue {
     this.editTabModal.title = tabIndex === null ? "Add Tab" : "Edit Tab"
 
     if (tabIndex !== null) {
-      const tab = this.linksData.tabs[tabIndex];
+      const tab = this.ducky.data.tabs[tabIndex];
       this.editTabModal.name = tab.name;
       this.editTabModal.confirmButtonName = 'Update';
       this.editTabModal.showDelete = true;
@@ -592,8 +612,8 @@ export default class HomeView extends Vue {
   }
 
   saveLink() {
-    const linksCopy = JSON.parse(JSON.stringify(this.linksData)) as LinksData;
-    const section = linksCopy
+    const duckyCopy = this.getDuckyCopyWithDateUpdated();
+    const section = duckyCopy.data
         .tabs[this.editLinkModal.tabIndex as number]
         .sections[this.editLinkModal.sectionIndex as number] as Section;
     const link = new Link(this.editLinkModal.name, this.editLinkModal.url);
@@ -604,14 +624,14 @@ export default class HomeView extends Vue {
       section.links.push(link);
     }
 
-    store.commit('setLinksData', linksCopy);
+    store.commit('setDucky', duckyCopy);
     this.editLinkModal.visible = false;
   }
 
   saveSection() {
-    const linksCopy = JSON.parse(JSON.stringify(this.linksData)) as LinksData;
+    const duckyCopy = this.getDuckyCopyWithDateUpdated();
     const m = this.editSectionModal;
-    const tab = linksCopy.tabs[m.tabIndex as number]
+    const tab = duckyCopy.data.tabs[m.tabIndex as number]
 
 
     if (m.sectionIndex !== null) {
@@ -621,12 +641,12 @@ export default class HomeView extends Vue {
       tab.sections.push(new Section(m.name, [], m.notes));
     }
 
-    store.commit('setLinksData', linksCopy);
+    store.commit('setDucky', duckyCopy);
     this.editSectionModal.visible = false;
   }
 
   saveTab() {
-    const linksCopy = JSON.parse(JSON.stringify(this.linksData)) as LinksData;
+    const linksCopy = JSON.parse(JSON.stringify(this.data)) as Data;
     const m = this.editTabModal;
 
     if (m.tabIndex !== null) {
@@ -635,7 +655,7 @@ export default class HomeView extends Vue {
       linksCopy.tabs.push(new Tab(m.name, []));
     }
 
-    store.commit('setLinksData', linksCopy);
+    store.commit('setLinks', linksCopy);
     this.editTabModal.visible = false;
   }
 

@@ -1,4 +1,5 @@
 const { defineConfig } = require('@vue/cli-service')
+const NodePolyfillPlugin = require("node-polyfill-webpack-plugin")
 
 
 const singleFileOutputChainWebpack = (config) => {
@@ -38,7 +39,21 @@ module.exports = defineConfig({
     optimization: {
       splitChunks: false,
     },
+    plugins: [
+      new NodePolyfillPlugin(),
+    ],
   },
+  devServer: {
+    proxy: {
+      '/auth': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        pathRewrite: {
+          '^/auth': '',
+        },
+      }
+    }
+  }
 });
 
 // chainWebpack: singleFileOutputChainWebpack

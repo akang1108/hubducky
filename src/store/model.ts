@@ -27,10 +27,27 @@ export class Tab {
   }
 }
 
-export class LinksData {
+export class Data {
   tabs: Tab[];
   constructor(tabs: Tab[]) {
     this.tabs = tabs;
+  }
+}
+
+export class Ducky {
+  lastUpdated: Date;
+  data: Data;
+
+  constructor(lastUpdated: Date, data: Data) {
+    this.lastUpdated = lastUpdated;
+    this.data = data;
+  }
+
+  static blank(): Ducky {
+    return new Ducky(
+        new Date(),
+        new Data([])
+    );
   }
 }
 

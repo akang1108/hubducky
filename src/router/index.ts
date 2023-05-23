@@ -1,19 +1,20 @@
 import {createRouter, createWebHashHistory, createWebHistory, RouteRecordRaw} from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import AuthView from '../views/AuthView.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    name: 'home',
     component: HomeView
+  },
+  {
+    path: '/auth',
+    component: AuthView
   }
 ]
 
-/**
- * Using hash history to allow app to be able to run without a web server
- */
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(process.env.baseUrl),
   routes
 })
 
