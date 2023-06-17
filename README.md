@@ -1,62 +1,33 @@
-# links
+# HubDucky
 
-## Description
+Simple webpage for serving up personal links.
 
-*This is still pre v1*
+```bash
+yarn install --frozen-lockfile    # install
+yarn dev                          # run local
+yarn build                        # build prod
+```
 
-Simple webpage for serving up personal links. Created this project because I prefer links in this fashion as opposed
-to using browser bookmarks.
+## Requires
 
-Intention is to just run this locally as single html page on your browser using browser local storage.
-Not intending for this to run on a web server.
+* Node v16+
+* Yarn v1.22+
 
-## Frameworks
+## Libs
 
 * VueJS 3
+* Vite 4
 * Typescript
 * Vuex
 * PrimeVue, PrimeIcons, PrimeFlex
 * Dropbox (needed node-polyfill-webpack-plugin)
 
-## Requirements
+## Future Ideas
 
-* Node v16+
-* Yarn v1.22+
-
-## Development
-
-```bash
-yarn install --frozen-lockfile
-yarn serve
-
-# Lints and fixes files
-yarn lint
-```
-
-## Prod build
-
-```bash
-# build for prod
-yarn build
-open dist/index.html
-```
-
-## Feature Ideas
-
-Some things I plan to add:
-
+* Public website
+* Offline mode
+* Keyboard shortcuts
 * Notes feature
-* Import bookmarks from browser (and maybe later with Google Drive)
-* Export links data (initially just a file download, maybe integrate in future with Google Drive)
+* Import bookmarks from browser
 * Workspaces - just a higher level grouping of links (currently it's tabs -> sections -> links)
   * So have, workspaces -> tabs -> sections -> links
-* Public website sharing this project for download and demo features
-* Keyboard shortcuts
-* See if the distribution can just be a single html file (with all js/css/images embedded)
-  * https://jamesscheller.com/vue-cli-and-single-file-webpack-bundles
-
-## Notes
-
-Configured app, so it doesn't need to run on a web server:
-- [vue.config.js](vue.config.js) - `publicPath: ''` (otherwise defaults to `/`)
-- [src/router/index.ts](src/router/index.ts) - `history: createWebHashHistory()`

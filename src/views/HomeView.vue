@@ -190,9 +190,6 @@ import {watch} from "vue";
 import {EditLinkModal, EditSectionModal, EditTabModal, ImportFromTextModal} from "@/views/model";
 import Keyboard from "@/components/Keyboard.vue";
 import {KeyboardInput} from "@/components/keyboard-model";
-import {Ref} from 'vue-property-decorator';
-
-require('isomorphic-fetch'); // or another library of choice.
 
 @Options({
   components: {
@@ -205,11 +202,11 @@ export default class HomeView extends Vue {
   editSectionModal = new EditSectionModal();
   editTabModal = new EditTabModal();
   importFromTextModal = new ImportFromTextModal();
-  @Ref() keyboardInput = new KeyboardInput();
+  // @Ref() keyboardInput = new KeyboardInput();
 
   redirectUri = 'http://localhost:8080/auth'
   dropboxOAuth2URL = `https://www.dropbox.com/oauth2/authorize` +
-      `?client_id=${process.env.DROPBOX_CLIENT_ID}` +
+      `?client_id=${import.meta.env.VITE_DROPBOX_CLIENT_ID}` +
       `&redirect_uri=${this.redirectUri}` +
       `&response_type=token`;
 
@@ -257,10 +254,6 @@ export default class HomeView extends Vue {
   get keyboardMainEnabled(): boolean {
     const keyboardMainEabled = !this.editTabModal.visible && !this.importModal.visible &&
         !this.editSectionModal.visible && !this.editSectionModal.visible && !this.editLinkModal.visible;
-
-    // console.log('editTabModal', this.editTabModal)
-    // console.log('keyboardMainEnabled', keyboardMainEabled);
-
     return keyboardMainEabled;
   }
 
@@ -298,7 +291,7 @@ export default class HomeView extends Vue {
   }
 
   created() {
-    console.log(process.env);
+    console.log(import.meta.env);
     watch([this.editLinkModal, this.editSectionModal, this.editTabModal], (newValues: any[]) => {
       if (newValues[0].visible || newValues[1].visible || newValues[2].visible) {
         this.removeKeysListener();

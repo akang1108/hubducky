@@ -34,18 +34,9 @@ export default class AuthView extends Vue {
     const token = hash.get('access_token') as string;
 
     if (token != null) {
-      this.dbx = new Dropbox({ clientId: process.env.DROPBOX_CLIENT_ID, accessToken: token });
+      this.dbx = new Dropbox({ clientId: import.meta.env.VITE_DROPBOX_CLIENT_ID, accessToken: token });
       this.dbx.filesUpload({path: '/ducky.json', contents: JSON.stringify(this.ducky)});
     }
-
-    // this.dbx.usersGetCurrentAccount().then(value => {
-    //   console.log(value);
-    // });
-    //
-    // this.dbx.filesListFolder({ path: ''}).then(value => {
-    //   console.log(value);
-    // });
-
   }
 }
 
